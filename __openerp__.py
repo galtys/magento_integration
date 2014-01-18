@@ -6,9 +6,10 @@
     'version': '0.1',
     'depends': [
         'base',
-        'sale',
+        #'sale',
         'mrp',
         'delivery',
+        'sale_stock',
     ],
     'category': 'Specific Industry Applications',
     'summary': 'Magento Integration',

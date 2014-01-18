@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 '''
     magento
 
@@ -241,6 +240,35 @@ class Product(osv.Model):
         product = self.find_using_magento_id(
             cursor, user, magento_id, context
         )
+        if not product:
+            website = website_obj.browse(
+                cursor, user, context['magento_website'], context=context
+            )
+
+            instance = website.instance
+            with magento.Product(
+                instance.url, instance.api_user, instance.api_key
+            ) as product_api:
+                product_data = product_api.info(magento_id)
+
+            #product = self.create_using_magento_data(
+            #    cursor, user, product_data, context
+            #)
+            sku=product_data['sku']
+            cursor.execute("select id from product_product where default_code=%s",(sku,))
+            res=cursor.fetchall()
+            print 44*'88'
+            if res:
+                mwp_id=self.pool.get('magento.website.product').create(cursor,user,
+                                                                       {'product':res[0],
+                                                                        'website':website.id,
+                                                                        'magento_id':magento_id})
+                print '  ', mwp_id
+                product = self.find_using_magento_id(
+                    cursor, user, magento_id, context
+                    )
+            else:
+                print 'NOT IN ERP', sku
         if not product:
             # If product is not found, get the info from magento and delegate
             # to create_using_magento_data

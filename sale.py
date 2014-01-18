@@ -12,7 +12,7 @@ import xmlrpclib
 import magento
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
-
+from openerp import netsvc
 
 class MagentoOrderState(osv.Model):
     """Magento - OpenERP Order State map
@@ -113,6 +113,7 @@ class SaleLine(osv.osv):
 
     _columns = dict(
         magento_notes=fields.text("Magento Notes"),
+        is_bundle=fields.boolean("Is Bundle"),
     )
 
 
@@ -350,7 +351,7 @@ class Sale(osv.Model):
             partner_obj.find_or_create_address_as_partner_using_magento_data(
                 cursor, user, order_data['shipping_address'], partner, context
             )
-
+        comments = ','.join([x['comment'] for x in order_data['status_history'] if x['comment']])
         sale_data = {
             'name': instance.order_prefix + order_data['increment_id'],
             'shop_id': store_view.shop.id,
@@ -364,11 +365,14 @@ class Sale(osv.Model):
             'magento_instance': instance.id,
             'magento_store_view': store_view.id,
             'order_line': self.get_item_line_data_using_magento_data(
-                cursor, user, order_data, context
-            )
-        }
-
-        if float(order_data.get('shipping_amount')):
+                cursor, user, order_data, context),
+            'delivery_notes': order_data['shipping_description'] +'\n'+ comments.strip(),
+            }
+        print 44*'_.'
+        import pprint
+        print pprint.pprint(order_data)
+        #if float(order_data.get('shipping_amount')):
+        if 1:
             sale_data['order_line'].append(
                 self.get_shipping_line_data_using_magento_data(
                     cursor, user, order_data, context
@@ -392,8 +396,73 @@ class Sale(osv.Model):
         self.process_sale_using_magento_state(
             cursor, user, sale, order_data['state'], context
         )
-
+        self.invoice_and_pay(cursor, user, [sale_id], context)
         return sale
+    def _create_pickings_and_procurements(self, cr, uid, order, order_lines, picking_id=False, context=None):
+        """Create the required procurements to supply sales order lines, also connecting
+        the procurements to appropriate stock moves in order to bring the goods to the
+        sales order's requested location.
+
+        If ``picking_id`` is provided, the stock moves will be added to it, otherwise
+        a standard outgoing picking will be created to wrap the stock moves, as returned
+        by :meth:`~._prepare_order_picking`.
+
+        Modules that wish to customize the procurements or partition the stock moves over
+        multiple stock pickings may override this method and call ``super()`` with
+        different subsets of ``order_lines`` and/or preset ``picking_id`` values.
+
+        :param browse_record order: sales order to which the order lines belong
+        :param list(browse_record) order_lines: sales order line records to procure
+        :param int picking_id: optional ID of a stock picking to which the created stock moves
+                               will be added. A new picking will be created if ommitted.
+        :return: True
+        """
+        move_obj = self.pool.get('stock.move')
+        picking_obj = self.pool.get('stock.picking')
+        procurement_obj = self.pool.get('procurement.order')
+        proc_ids = []
+
+        for line in order_lines:
+            print "creating procurement for line", [line.product_id.default_code, line.is_bundle, picking_id, line.product_id.type]
+            if line.state == 'done':
+                continue
+
+            date_planned = self._get_date_planned(cr, uid, order, line, order.date_order, context=context)
+
+            if line.product_id:
+                if line.product_id.type in ('product', 'consu'):
+                    if not picking_id:
+                        picking_id = picking_obj.create(cr, uid, self._prepare_order_picking(cr, uid, order, context=context))
+                    if not line.is_bundle:
+                        move_id = move_obj.create(cr, uid, self._prepare_order_line_move(cr, uid, order, line, picking_id, date_planned, context=context))
+                        print 'new move id',move_id
+                else:
+                    # a service has no stock move
+                    move_id = False
+                if not line.is_bundle:
+                    proc_id = procurement_obj.create(cr, uid, self._prepare_order_line_procurement(cr, uid, order, line, move_id, date_planned, context=context))
+                    proc_ids.append(proc_id)
+                    line.write({'procurement_id': proc_id})
+                    self.ship_recreate(cr, uid, order, line, move_id, proc_id)
+
+        wf_service = netsvc.LocalService("workflow")
+        if picking_id:
+            wf_service.trg_validate(uid, 'stock.picking', picking_id, 'button_confirm', cr)
+        for proc_id in proc_ids:
+            wf_service.trg_validate(uid, 'procurement.order', proc_id, 'button_confirm', cr)
+
+        val = {}
+        if order.state == 'shipping_except':
+            val['state'] = 'progress'
+            val['shipped'] = False
+
+            if (order.order_policy == 'manual'):
+                for line in order.order_line:
+                    if (not line.invoiced) and (line.state not in ('cancel', 'draft')):
+                        val['state'] = 'manual'
+                        break
+        order.write(val)
+        return True
 
     def get_item_line_data_using_magento_data(
         self, cursor, user, order_data, context
@@ -413,21 +482,29 @@ class Sale(osv.Model):
 
         line_data = []
         for item in order_data['items']:
-            if not item['parent_item_id']:
+            if 1:#not item['parent_item_id']:
 
                 taxes = self.get_magento_taxes(cursor, user, item, context)
 
                 # If its a top level product, create it
+                #print item
+                is_bundle=False
+                if (not item['parent_item_id']) and ('bundle_option' in item['product_options']):
+                    is_bundle=True
+                product_uom_qty = float(item['qty_ordered'])
+                if item['parent_item_id']:
+                    product_uom_qty = product_uom_qty/2
                 values = {
                     'name': item['name'],
-                    'price_unit': float(item['price']),
+                    'price_unit': float(item['price_incl_tax']),
                     'product_uom':
                         website_obj.get_default_uom(
                             cursor, user, context
                         ).id,
-                    'product_uom_qty': float(item['qty_ordered']),
+                    'product_uom_qty': product_uom_qty,
                     'magento_notes': item['product_options'],
-                    'type': 'make_to_order',
+                    'is_bundle': is_bundle,
+                    'type': 'make_to_stock',
                     'tax_id': [(6, 0, taxes)],
                     'product_id':
                         product_obj.find_or_create_using_magento_id(
@@ -439,9 +516,10 @@ class Sale(osv.Model):
 
             # If the product is a child product of a bundle product, do not
             # create a separate line for this.
-            if 'bundle_option' in item['product_options'] and \
-                    item['parent_item_id']:
-                continue
+
+            #if 'bundle_option' in item['product_options'] and \
+            #        item['parent_item_id']:
+            #    continue
 
         # Handle bundle products.
         # Find/Create BoMs for bundle products
@@ -511,9 +589,13 @@ class Sale(osv.Model):
         taxes = self.get_magento_shipping_tax(
             cursor, user, order_data, context
         )
+        ship_product=self.pool.get('product.product').search(cursor,user,[('default_code','=','DELIVERY')])
+        if not len(ship_product)==1:
+            raise ValueError("Can not find delivery product with 'Internal Referene'=DELIVERY")
         return (0, 0, {
             'name': 'Magento Shipping',
             'price_unit': float(order_data.get('shipping_incl_tax', 0.00)),
+            'product_id': ship_product[0],
             'product_uom':
                 website_obj.get_default_uom(
                     cursor, user, context
@@ -522,7 +604,7 @@ class Sale(osv.Model):
             'magento_notes': ' - '.join([
                 order_data['shipping_method'],
                 order_data['shipping_description']
-            ])
+            ]),            
         })
 
     def get_discount_line_data_using_magento_data(

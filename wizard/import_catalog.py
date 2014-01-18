@@ -77,7 +77,22 @@ class ImportCatalog(osv.TransientModel):
         product_obj = self.pool.get('product.product')
 
         instance = website.instance
-
+        import csv
+        def dict2row(PCMRP,rec):
+            out=[]
+            for p in PCMRP:
+                out.append(rec[p])
+            return out
+    
+        def save_csv(fn, data, HEADER=None):
+            if len(data)>0:
+                if HEADER is None:
+                    HEADER=data[0].keys()
+            fp = open(fn, 'wb')
+            out=[dict2row(HEADER, x) for x in data]
+            csv_writer=csv.writer(fp)
+            csv_writer.writerows( [HEADER]+out )
+            fp.close()
         with Product(
             instance.url, instance.api_user, instance.api_key
         ) as product_api:
@@ -96,8 +111,42 @@ class ImportCatalog(osv.TransientModel):
             context.update({
                 'magento_website': website.id
             })
+            mg_skus=[]
+            import pprint
+            
+            #import galtyslib.openerplib as openerplib
+            mg_map = dict([ (x['sku'],x) for x in mag_products])
+            mg_skus = [x['sku'] for x in mag_products]
+            prod_obj=self.pool.get('product.product')
+            prod_ids=prod_obj.search(cursor, user, [])
+            prods = [x for  x in prod_obj.browse(cursor, user, prod_ids) ]
+            erp_products=[ dict(erp_sku=x.default_code,erp_name=x.name.encode('utf8') ) for x in prods]
+            erp_map = dict([ (x['erp_sku'],x) for x in erp_products])
+            erp_skus=[x['erp_sku'] for x in erp_products]
+            
+            out=[]
+            for sku in set(mg_skus).union(set(erp_skus)) - set(mg_skus).intersection( set(erp_skus) ):
+                mg=mg_map.get(sku)
+                erp=erp_map.get(sku)
+                rec={}
+                if mg:
+                    x=dict(sku=mg['sku'],name=mg['name'].encode('utf8'))
+                    rec.update(x)
+                else:
+                    x=dict(sku='',name='')
+                    rec.update(x)
+                if erp:
+                    rec.update(erp)
+                else:
+                    x=dict(erp_sku='',erp_name='')
+                    rec.update(x)
 
+                out.append(rec)
+                
+            #print out
+            save_csv('mg_erp_skus_cmp_pjb_live.csv', out)
             for mag_product in mag_products:
+                pprint.pprint(mag_product)
                 products.append(
                     product_obj.find_or_create_using_magento_id(
                         cursor, user, mag_product['product_id'], context,
