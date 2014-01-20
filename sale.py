@@ -589,9 +589,9 @@ class Sale(osv.Model):
         taxes = self.get_magento_shipping_tax(
             cursor, user, order_data, context
         )
-        ship_product=self.pool.get('product.product').search(cursor,user,[('default_code','=','DELIVERY')])
+        ship_product=self.pool.get('product.product').search(cursor,user,[('default_code','=','MAGENTO_DELIVERY')])
         if not len(ship_product)==1:
-            raise ValueError("Can not find delivery product with 'Internal Referene'=DELIVERY")
+            raise ValueError("Can not find delivery product with 'Internal Referene'=MAGENTO_DELIVERY")
         return (0, 0, {
             'name': 'Magento Shipping',
             'price_unit': float(order_data.get('shipping_incl_tax', 0.00)),
