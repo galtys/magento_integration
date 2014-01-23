@@ -271,7 +271,6 @@ class InstanceWebsite(osv.Model):
         products = []
         instance = website.instance
         for magento_product in website.magento_products:
-            products.append(magento_product.product)
 
             is_in_stock = '1' if magento_product.product.qty_available > 0 \
                 else '0'
@@ -289,7 +288,7 @@ class InstanceWebsite(osv.Model):
                     inventory_api.update(
                         magento_product.magento_id, product_data
                         )
-
+                    products.append(magento_product.product)
         return products
 
 
