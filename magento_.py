@@ -285,9 +285,10 @@ class InstanceWebsite(osv.Model):
             with magento.Inventory(
                 instance.url, instance.api_user, instance.api_key
             ) as inventory_api:
-                inventory_api.update(
-                    magento_product.magento_id, product_data
-                )
+                if magento_product.product.magento_product_type in ['simple']:
+                    inventory_api.update(
+                        magento_product.magento_id, product_data
+                        )
 
         return products
 
