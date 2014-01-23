@@ -417,10 +417,10 @@ class Product(osv.Model):
             'name': product_data['name'],
             'default_code': product_data['sku'],
             'description': product_data['description'],
-            'list_price': float(
-                product_data.get('special_price') or
-                product_data.get('price') or 0.00
-            ),
+#            'list_price': float(
+#                product_data.get('special_price') or
+#                product_data.get('price') or 0.00
+#            ),
         }
 
     def update_from_magento_using_data(
