@@ -168,6 +168,9 @@ class Partner(osv.Model):
                     [customer_data['firstname'], customer_data['lastname']]
                 ),
                 'email': customer_data['email'],
+                'is_company': False,
+                'retail':True,
+                'customer_relationship':'retail',
                 'magento_ids': [
                     (0, 0, {
                         'magento_id': customer_data.get('customer_id', 0),
@@ -209,8 +212,7 @@ class Partner(osv.Model):
         ).partner or None
 
     def find_or_create_address_as_partner_using_magento_data(
-        self, cursor, user, address_data, parent, context
-    ):
+        self, cursor, user, address_data, parent, context,type='default'   ):
         """Find or Create an address from magento with `address_data` as a
         partner in openerp with `parent` as the parent partner of this address
         partner (how fucked up is that).
@@ -222,15 +224,20 @@ class Partner(osv.Model):
         :param context: Application context.
         :return: Browse record of address created/found
         """
-        for address in parent.child_ids + [parent]:
-            if self.match_address_with_magento_data(
-                cursor, user, address, address_data
-            ):
-                break
-        else:
+        if not parent.child_ids:
             address = self.create_address_as_partner_using_magento_data(
-                cursor, user, address_data, parent, context
+                cursor, user, parent, address_data,context,type=type
             )
+        else:
+            for address in [parent] + parent.child_ids:
+                if self.match_address_with_magento_data(
+                    cursor, user, address, address_data
+                ):
+                    break
+            else:
+                address = self.create_address_as_partner_using_magento_data(
+                    cursor, user, address_data, parent, context,type=type
+                )
 
         return address
 
@@ -268,7 +275,7 @@ class Partner(osv.Model):
         return True
 
     def create_address_as_partner_using_magento_data(
-        self, cursor, user, address_data, parent, context
+        self, cursor, user, address_data, parent, context,type='default'
     ):
         """Create a new partner with the `address_data` under the `parent`
 
@@ -298,6 +305,7 @@ class Partner(osv.Model):
             'street': address_data['street'],
             'state_id': state_id,
             'country_id': country.id,
+            'type':type,
             'city': address_data['city'],
             'zip': address_data['postcode'],
             'phone': address_data['telephone'],
@@ -306,3 +314,45 @@ class Partner(osv.Model):
         }, context=context)
 
         return self.browse(cursor, user, address_id, context=context)
+
+    def update_address_as_partner_using_magento_data(
+        self, cursor, user, partner, address_data, context, type='default'
+    ):
+        """Update a new partner with the `address_data` under the `parent`
+
+        :param cursor: Database cursor
+        :param user: ID of current user
+        :param address_data: Dictionary of address data from magento
+        :param parent: Parent partner for this address partner.
+        :param context: Application Context
+        :return: Browse record of address created
+        """
+        country_obj = self.pool.get('res.country')
+        state_obj = self.pool.get('res.country.state')
+
+        country = country_obj.search_using_magento_code(
+            cursor, user, address_data['country_id'], context
+        )
+        if address_data['region']:
+            state_id = state_obj.find_or_create_using_magento_region(
+                cursor, user, country, address_data['region'], context
+            ).id
+        else:
+            state_id = None
+        address_id = self.write(cursor, user, [partner.id], {
+            'name': u' '.join(
+                [address_data['firstname'], address_data['lastname']]
+            ),
+            'street': address_data['street'],
+            'state_id': state_id,
+            'country_id': country.id,
+            'type':type,
+            'city': address_data['city'],
+            'zip': address_data['postcode'],
+            'phone': address_data['telephone'],
+            'fax': address_data['fax'],
+            'parent_id': parent.id,
+        }, context=context)
+
+        #return self.browse(cursor, user, address_id, context=context)
+        return partner

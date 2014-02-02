@@ -349,7 +349,7 @@ class Sale(osv.Model):
 
         partner_shipping_address = \
             partner_obj.find_or_create_address_as_partner_using_magento_data(
-                cursor, user, order_data['shipping_address'], partner, context
+            cursor, user, order_data['shipping_address'], partner, context,type='delivery'
             )
         comments = ','.join([x['comment'] for x in order_data['status_history'] if x['comment']])
         sale_data = {
