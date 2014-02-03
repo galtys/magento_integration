@@ -26,6 +26,7 @@ class Country(osv.osv):
         :param context: Application context
         :return: Browse record of country if found else raises error
         """
+        print [code]
         country_ids = self.search(
             cursor, user, [('code', '=', code)], context=context
         )

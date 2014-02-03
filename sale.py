@@ -524,9 +524,9 @@ class Sale(osv.Model):
         # Handle bundle products.
         # Find/Create BoMs for bundle products
         # If no bundle products exist in sale, nothing extra will happen
-        bom_obj.find_or_create_bom_for_magento_bundle(
-            cursor, user, order_data, context
-        )
+        #bom_obj.find_or_create_bom_for_magento_bundle(
+        #    cursor, user, order_data, context
+        #)
 
         return line_data
 

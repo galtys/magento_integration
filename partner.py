@@ -225,7 +225,7 @@ class Partner(osv.Model):
         :return: Browse record of address created/found
         """
         if not parent.child_ids:
-            address = self.create_address_as_partner_using_magento_data(
+            address = self.update_address_as_partner_using_magento_data(
                 cursor, user, parent, address_data,context,type=type
             )
         else:
@@ -351,7 +351,7 @@ class Partner(osv.Model):
             'zip': address_data['postcode'],
             'phone': address_data['telephone'],
             'fax': address_data['fax'],
-            'parent_id': parent.id,
+            #'parent_id': partner.id,
         }, context=context)
 
         #return self.browse(cursor, user, address_id, context=context)
