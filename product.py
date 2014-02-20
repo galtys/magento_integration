@@ -607,7 +607,7 @@ class MagentoWebsiteProduct(osv.Model):
             'Magento ID', required=True, select=True,
         ),
         website=fields.many2one(
-            'magento.instance.website', 'Magento Website', readonly=True,
+            'magento.instance.website', 'Magento Website', #readonly=True,
             select=True, required=True
         ),
         product=fields.many2one(
