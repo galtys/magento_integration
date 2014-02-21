@@ -368,9 +368,6 @@ class Sale(osv.Model):
                 cursor, user, order_data, context),
             'delivery_notes': order_data['shipping_description'] +'\n'+ comments.strip(),
             }
-        print 44*'_.'
-        import pprint
-        print pprint.pprint(order_data)
         #if float(order_data.get('shipping_amount')):
         if 1:
             sale_data['order_line'].append(
