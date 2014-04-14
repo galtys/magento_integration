@@ -222,6 +222,36 @@ class Product(osv.Model):
             'product.price_tier', 'product', string='Price Tiers'
         ),
     )
+    def copy(self, cr, uid, id, default=None, context=None):
+        if context is None:
+            context={}
+
+        if not default:
+            default = {}
+
+        # Craft our own `<name> (copy)` in en_US (self.copy_translation()
+        # will do the other languages).
+        context_wo_lang = context.copy()
+        context_wo_lang.pop('lang', None)
+        product = self.read(cr, uid, id, ['name','default_code'], context=context_wo_lang)
+        default = default.copy()
+        default.update(name=_("%s (copy)") % (product['name']))
+        default.update(default_code=_("%s (copy)") % (product['default_code']))
+        default.update(magento_ids=[])
+        if context.get('variant',False):
+            fields = ['product_tmpl_id', 'active', 'variants', 'default_code',
+                    'price_margin', 'price_extra']
+            data = self.read(cr, uid, id, fields=fields, context=context)
+            for f in fields:
+                if f in default:
+                    data[f] = default[f]
+            data['product_tmpl_id'] = data.get('product_tmpl_id', False) \
+                    and data['product_tmpl_id'][0]
+            del data['id']
+            return self.create(cr, uid, data)
+        else:
+            return super(Product, self).copy(cr, uid, id, default=default,
+                    context=context)
 
     def find_or_create_using_magento_id(
         self, cursor, user, magento_id, context
@@ -257,7 +287,7 @@ class Product(osv.Model):
             sku=product_data['sku']
             cursor.execute("select id from product_product where default_code=%s",(sku,))
             res=cursor.fetchall()
-            print 44*'88'
+            #print 44*'88'
             if res:
                 mwp_id=self.pool.get('magento.website.product').create(cursor,user,
                                                                        {'product':res[0],
