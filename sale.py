@@ -347,6 +347,7 @@ class Sale(osv.Model):
             main_vals={'firstname': order_data['customer_firstname'],
                        'lastname': order_data['customer_lastname'],
                        'email': order_data['customer_email'],
+                       'property_product_pricelist': store_view.shop.pricelist_id.id,
                        'magento_id': 0
                        }
             address.write( main_vals)
