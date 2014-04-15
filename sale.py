@@ -332,25 +332,42 @@ class Sale(osv.Model):
                 cursor, user, order_data['customer_id'], context
             )
         else:
-            partner = partner_obj.create_using_magento_data(
-                cursor, user, {
-                    'firstname': order_data['customer_firstname'],
-                    'lastname': order_data['customer_lastname'],
-                    'email': order_data['customer_email'],
-                    'magento_id': 0
-                },
-                context
-            )
-
-        partner_invoice_address = \
-            partner_obj.find_or_create_address_as_partner_using_magento_data(
-                cursor, user, order_data['billing_address'], partner, context
-            )
-
-        partner_shipping_address = \
-            partner_obj.find_or_create_address_as_partner_using_magento_data(
-            cursor, user, order_data['shipping_address'], partner, context,type='delivery'
-            )
+            #partner = partner_obj.create_using_magento_data(
+            #    cursor, user, {
+            #        'firstname': order_data['customer_firstname'],
+            #        'lastname': order_data['customer_lastname'],
+            #        'email': order_data['customer_email'],
+            #        'magento_id': 0
+            #    },
+            #    context
+            #)
+            address = self.pool.get('res.partner').create_address_as_partner_using_magento_data(
+                cursor, user, order_data['billing_address'], False, context,type='default',
+                )
+            main_vals={'firstname': order_data['customer_firstname'],
+                       'lastname': order_data['customer_lastname'],
+                       'email': order_data['customer_email'],
+                       'magento_id': 0
+                       }
+            address.write( main_vals)
+            partner=address
+        partner_invoice_address=partner
+            #partner_invoice_address = \
+            #    partner_obj.find_or_create_address_as_partner_using_magento_data(
+            #    cursor, user, order_data['billing_address'], partner, context
+            #    )
+        if self.pool.get('res.partner').match_address_with_magento_data(
+            cursor, user, partner, order_data['shipping_address'],
+            ):
+            partner_shipping_address=partner
+        else:
+            partner_shipping_address=self.pool.get('res.partner').create_address_as_partner_using_magento_data(
+                cursor, user, order_data['billing_address'], partner, context,type='shipping',
+                )
+        #partner_shipping_address = \
+        #    partner_obj.find_or_create_address_as_partner_using_magento_data(
+        #    cursor, user, order_data['shipping_address'], partner, context,type='delivery'
+        #    )
         comments = ','.join([x['comment'] for x in order_data['status_history'] if x['comment']])
         sale_data = {
             'name': instance.order_prefix + order_data['increment_id'],

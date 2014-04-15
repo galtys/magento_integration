@@ -298,20 +298,35 @@ class Partner(osv.Model):
             ).id
         else:
             state_id = None
-        address_id = self.create(cursor, user, {
-            'name': u' '.join(
-                [address_data['firstname'], address_data['lastname']]
-            ),
-            'street': address_data['street'],
-            'state_id': state_id,
-            'country_id': country.id,
-            'type':type,
-            'city': address_data['city'],
-            'zip': address_data['postcode'],
-            'phone': address_data['telephone'],
-            'fax': address_data['fax'],
-            'parent_id': parent.id,
-        }, context=context)
+        if parent:
+            address_id = self.create(cursor, user, {
+                'name': u' '.join(
+                    [address_data['firstname'], address_data['lastname']]
+                ),
+                'street': address_data['street'],
+                'state_id': state_id,
+                'country_id': country.id,
+                'type':type,
+                'city': address_data['city'],
+                'zip': address_data['postcode'],
+                'phone': address_data['telephone'],
+                'fax': address_data['fax'],
+                'parent_id': parent.id,
+            }, context=context)
+        else:
+            address_id = self.create(cursor, user, {
+                'name': u' '.join(
+                    [address_data['firstname'], address_data['lastname']]
+                ),
+                'street': address_data['street'],
+                'state_id': state_id,
+                'country_id': country.id,
+                'type':type,
+                'city': address_data['city'],
+                'zip': address_data['postcode'],
+                'phone': address_data['telephone'],
+                'fax': address_data['fax'],
+            }, context=context)
 
         return self.browse(cursor, user, address_id, context=context)
 
