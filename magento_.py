@@ -546,6 +546,7 @@ class WebsiteStoreView(osv.Model):
         :return: list of sale ids
         """
         sale_obj = self.pool.get('sale.order')
+        print '44.'*87
         magento_state_obj = self.pool.get('magento.order_state')
 
         instance = store_view.instance
@@ -601,6 +602,7 @@ class WebsiteStoreView(osv.Model):
                 )
             }, context=context)
             orders = order_api.list(filter)
+            print orders
             for order in orders:
                 new_sales.append(
                     sale_obj.find_or_create_using_magento_data(

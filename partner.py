@@ -254,11 +254,12 @@ class Partner(osv.Model):
         :return: True if address matches else False
         """
         # Check if the name matches
+        #print a
         if address.name != u' '.join(
             [address_data['firstname'], address_data['lastname']]
         ):
             return False
-
+        
         if not all([
             (address.street or None) == address_data['street'],
             (address.zip or None) == address_data['postcode'],

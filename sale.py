@@ -357,21 +357,41 @@ class Sale(osv.Model):
             #    partner_obj.find_or_create_address_as_partner_using_magento_data(
             #    cursor, user, order_data['billing_address'], partner, context
             #    )
-        if self.pool.get('res.partner').match_address_with_magento_data(
-            cursor, user, partner, order_data['shipping_address'],
-            ):
+        def cmp_add(a1,a2):
+            keys=['street','postcode','city','telephone','fax','country_id','region','region']
+            same=True
+            for k in keys:
+                if a1[k]!=a2[k]:
+                    same=False
+                    break
+            return same
+        print 44*'_'
+        print 'ORDER DATA', order_data
+        same_shipping_and_billing=order_data['shipping_address']['same_as_billing']
+        #if cmp_add( order_data['billing_address'],order_data['shipping_address']): #same_shipping_and_billing:
+        if int( same_shipping_and_billing):
             partner_shipping_address=partner
         else:
             partner_shipping_address=self.pool.get('res.partner').create_address_as_partner_using_magento_data(
-                cursor, user, order_data['billing_address'], partner, context,type='shipping',
+                cursor, user, order_data['shipping_address'], partner, context,type='delivery',
                 )
-        #partner_shipping_address = \
-        #    partner_obj.find_or_create_address_as_partner_using_magento_data(
-        #    cursor, user, order_data['shipping_address'], partner, context,type='delivery'
-        #    )
-        comments = ','.join([x['comment'] for x in order_data['status_history'] if x['comment']])
+        def include_comment(c):
+            if c is None:
+                return False
+            elif 'Customer was redirected to SecureHosting' in c:
+                return False
+            elif 'Customer was redirected back from SecureHosting' in c:
+                return False
+            return True
+        if order_data['delivery_date']:
+            comments='Requested Date: '+order_data['delivery_date']+'\n'
+        else:
+            comments=''
+
+        comments += ','.join([x['comment'].lstrip('Customer Order Comment:').strip() for x in order_data['status_history'] if include_comment(x['comment']) ])
         sale_data = {
             'name': instance.order_prefix + order_data['increment_id'],
+
             'shop_id': store_view.shop.id,
             'date_order': order_data['created_at'].split()[0],
             'partner_id': partner.id,
@@ -384,9 +404,12 @@ class Sale(osv.Model):
             'magento_store_view': store_view.id,
             'order_line': self.get_item_line_data_using_magento_data(
                 cursor, user, order_data, context),
-            'delivery_notes': order_data['shipping_description'] +'\n'+ comments.strip(),
+            'delivery_notes': order_data['shipping_description'].lstrip('Select Delivery Type').lstrip('-').strip() +'\n'+ comments.strip() ,
             }
         #if float(order_data.get('shipping_amount')):
+        file('/opt/openerp/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
+        if order_data['delivery_date'].strip():
+            sale_data['requested_date'] = order_data['delivery_date']
         if 1:
             sale_data['order_line'].append(
                 self.get_shipping_line_data_using_magento_data(
