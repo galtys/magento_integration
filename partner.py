@@ -302,30 +302,35 @@ class Partner(osv.Model):
         if parent:
             address_id = self.create(cursor, user, {
                 'name': u' '.join(
-                    [address_data['firstname'], address_data['lastname']]
+                    [address_data['firstname'], address_data['lastname'], address_data['company']]
                 ),
                 'street': address_data['street'],
+#                'street2': address_data['company'],
+
                 'state_id': state_id,
                 'country_id': country.id,
                 'type':type,
                 'city': address_data['city'],
                 'zip': address_data['postcode'],
                 'phone': address_data['telephone'],
+                'mobile':address_data['mobile_number'],
                 'fax': address_data['fax'],
                 'parent_id': parent.id,
             }, context=context)
         else:
             address_id = self.create(cursor, user, {
                 'name': u' '.join(
-                    [address_data['firstname'], address_data['lastname']]
+                    [address_data['firstname'], address_data['lastname'], address_data['company']]
                 ),
                 'street': address_data['street'],
+#                'street2': address_data['company'],
                 'state_id': state_id,
                 'country_id': country.id,
                 'type':type,
                 'city': address_data['city'],
                 'zip': address_data['postcode'],
                 'phone': address_data['telephone'],
+                'mobile':address_data['mobile_number'],
                 'fax': address_data['fax'],
             }, context=context)
 
@@ -357,15 +362,17 @@ class Partner(osv.Model):
             state_id = None
         address_id = self.write(cursor, user, [partner.id], {
             'name': u' '.join(
-                [address_data['firstname'], address_data['lastname']]
+                [address_data['firstname'], address_data['lastname'],address_data['company']]
             ),
             'street': address_data['street'],
+            #'street2': address_data['company'],
             'state_id': state_id,
             'country_id': country.id,
             'type':type,
             'city': address_data['city'],
             'zip': address_data['postcode'],
             'phone': address_data['telephone'],
+            'mobile': address_data['mobile_number'],
             'fax': address_data['fax'],
             #'parent_id': partner.id,
         }, context=context)

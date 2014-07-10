@@ -347,29 +347,31 @@ class Sale(osv.Model):
             main_vals={'firstname': order_data['customer_firstname'],
                        'lastname': order_data['customer_lastname'],
                        'email': order_data['customer_email'],
+                       #'mobile': order_data['mobile_number'],                   
                        'property_product_pricelist': store_view.shop.pricelist_id.id,
                        'magento_id': 0
                        }
             address.write( main_vals)
             partner=address
-        partner_invoice_address=partner
-            #partner_invoice_address = \
-            #    partner_obj.find_or_create_address_as_partner_using_magento_data(
-            #    cursor, user, order_data['billing_address'], partner, context
-            #    )
-        def cmp_add(a1,a2):
+        def cmp_add(o):
+            a1=o['billing_address']
+            a2=o['shipping_address']
             keys=['street','postcode','city','telephone','fax','country_id','region','region']
             same=True
             for k in keys:
                 if a1[k]!=a2[k]:
                     same=False
                     break
+            if o['customer_firstname']!=a2['firstname']:
+                same=False
+            if o['customer_lastname']!=a2['lastname']:
+                same=False
+            if o['customer_email']!=a2['email']:
+                same=False
             return same
-        print 44*'_'
-        print 'ORDER DATA', order_data
+        partner_invoice_address=partner
         same_shipping_and_billing=order_data['shipping_address']['same_as_billing']
-        #if cmp_add( order_data['billing_address'],order_data['shipping_address']): #same_shipping_and_billing:
-        if int( same_shipping_and_billing):
+        if int( same_shipping_and_billing) and cmp_add(order_data):
             partner_shipping_address=partner
         else:
             partner_shipping_address=self.pool.get('res.partner').create_address_as_partner_using_magento_data(
