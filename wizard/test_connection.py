@@ -43,6 +43,12 @@ class TestConnection(osv.TransientModel):
         instance = instance_obj.browse(
             cursor, user, context.get('active_id'), context
         )
+
+        with magento.API(instance.url, instance.api_user, instance.api_key):
+            return
+        print 44*'_'
+        print x
+        
         try:
             with magento.API(
                 instance.url, instance.api_user, instance.api_key
