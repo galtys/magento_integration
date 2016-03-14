@@ -145,13 +145,15 @@ class ImportCatalog(osv.TransientModel):
                 
             #print out
             save_csv('mg_erp_skus_cmp_pjb_live.csv', out)
+            import xmlrpclib
             for mag_product in mag_products:
-                pprint.pprint(mag_product)
-                products.append(
-                    product_obj.find_or_create_using_magento_id(
-                        cursor, user, mag_product['product_id'], context,
-                    )
-                )
+                #pprint.pprint(mag_product)
+                try:
+                    products.append(product_obj.find_or_create_using_magento_id(cursor, user, mag_product['product_id'], context) )
+                except xmlrpclib.ProtocolError:
+                    print 'ERROR',mag_product
+                    continue
+            #print products
         return map(int, products)
 
     def open_products(self, cursor, user, ids, product_ids, context):
