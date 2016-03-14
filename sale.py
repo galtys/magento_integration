@@ -409,7 +409,7 @@ class Sale(osv.Model):
             'delivery_notes': order_data['shipping_description'].lstrip('Select Delivery Type').lstrip('-').strip() +'\n'+ comments.strip() ,
             }
         #if float(order_data.get('shipping_amount')):
-        file('/opt/openerp/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
+        file('/home/jan/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
         if order_data['delivery_date'].strip():
             sale_data['requested_date'] = order_data['delivery_date']
         if 1:
