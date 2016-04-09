@@ -13,6 +13,14 @@ import magento
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
 from openerp import netsvc
+def none_to_empty(a):
+    out={}
+    for k,v in a.items():
+        if v is None:
+            out[k]=''
+        else:
+            out[k]=v
+    return out
 
 class MagentoOrderState(osv.Model):
     """Magento - OpenERP Order State map
@@ -298,6 +306,7 @@ class Sale(osv.Model):
         :param context: Application context
         :returns: Browse record of sale order created
         """
+        order_data = none_to_empty(order_data)
         currency_obj = self.pool.get('res.currency')
         store_view_obj = self.pool.get('magento.store.store_view')
         partner_obj = self.pool.get('res.partner')
@@ -370,7 +379,9 @@ class Sale(osv.Model):
                 same=False
             return same
         partner_invoice_address=partner
-        same_shipping_and_billing=order_data['shipping_address']['same_as_billing']
+        #same_shipping_and_billing=order_data['shipping_address']['same_as_billing']
+        same_shipping_and_billing=True#order_data['shipping_address']['same_as_billing']
+
         if int( same_shipping_and_billing) and cmp_add(order_data):
             partner_shipping_address=partner
         else:
@@ -385,7 +396,7 @@ class Sale(osv.Model):
             elif 'Customer was redirected back from SecureHosting' in c:
                 return False
             return True
-        if order_data['delivery_date']:
+        if order_data.get('delivery_date',''):
             comments='Requested Date: '+order_data['delivery_date']+'\n'
         else:
             comments=''
@@ -402,6 +413,7 @@ class Sale(osv.Model):
             'partner_invoice_id': partner_invoice_address.id,
             'partner_shipping_id': partner_shipping_address.id,
             'magento_id': int(order_data['order_id']),
+            'order_policy':'manual',
             'magento_instance': instance.id,
             'magento_store_view': store_view.id,
             'order_line': self.get_item_line_data_using_magento_data(
@@ -409,8 +421,9 @@ class Sale(osv.Model):
             'delivery_notes': order_data['shipping_description'].lstrip('Select Delivery Type').lstrip('-').strip() +'\n'+ comments.strip() ,
             }
         #if float(order_data.get('shipping_amount')):
-        file('/opt/openerp/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
-        if order_data['delivery_date'].strip():
+        
+        file('/home/jan/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
+        if order_data.get('delivery_date','').strip():
             sale_data['requested_date'] = order_data['delivery_date']
         if 1:
             sale_data['order_line'].append(
@@ -521,9 +534,11 @@ class Sale(osv.Model):
         bom_obj = self.pool.get('mrp.bom')
 
         line_data = []
-        for item in order_data['items']:
+        for item_ in order_data['items']:
             if 1:#not item['parent_item_id']:
-
+                item = none_to_empty(item_)
+                #print 44*'_', [item['price_incl_tax'] ]
+                #print [item['price_incl_tax'], float(item['price_incl_tax'])]
                 taxes = self.get_magento_taxes(cursor, user, item, context)
 
                 # If its a top level product, create it
@@ -532,8 +547,11 @@ class Sale(osv.Model):
                 if (not item['parent_item_id']) and ('bundle_option' in item['product_options']):
                     is_bundle=True
                 product_uom_qty = float(item['qty_ordered'])
-                if item['parent_item_id']:
-                    product_uom_qty = product_uom_qty/2
+                #if item['parent_item_id']:
+                #    product_uom_qty = product_uom_qty/2
+                #print item
+                if item['price_incl_tax'] =='':
+                    item['price_incl_tax']='0.0'
                 values = {
                     'name': item['name'],
                     'price_unit': float(item['price_incl_tax']),
@@ -709,7 +727,7 @@ class Sale(osv.Model):
             return
 
         # Order is not canceled, move it to quotation
-        self.action_button_confirm(cursor, user, [sale.id], context)
+        #self.action_button_confirm(cursor, user, [sale.id], context)
 
         if openerp_state in ['closed', 'complete', 'processing']:
             self.action_wait(cursor, user, [sale.id], context)

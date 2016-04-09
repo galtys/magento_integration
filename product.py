@@ -9,6 +9,9 @@ from openerp.osv import fields, osv
 from openerp.tools.translate import _
 import openerp.addons.decimal_precision as dp
 
+#delete from magento_store_store_view;
+#delete from magento_store_price_tier ;
+#delete from magento_order_state ;
 
 class Category(osv.Model):
     """Product Category
@@ -270,6 +273,18 @@ class Product(osv.Model):
         product = self.find_using_magento_id(
             cursor, user, magento_id, context
         )
+        #print product
+        website = website_obj.browse(
+            cursor, user, context['magento_website'], context=context
+        )
+        
+        instance = website.instance
+        #with magento.Product(
+        #    instance.url, instance.api_user, instance.api_key
+        #) as product_api:
+        #    product_data = product_api.info(magento_id)
+        #    print product_data
+
         if not product:
             website = website_obj.browse(
                 cursor, user, context['magento_website'], context=context
@@ -277,10 +292,11 @@ class Product(osv.Model):
 
             instance = website.instance
             with magento.Product(
-                instance.url, instance.api_user, instance.api_key
+                    instance.url, instance.api_user, instance.api_key
             ) as product_api:
+                print ['magento_id for product', magento_id]
                 product_data = product_api.info(magento_id)
-
+                #print product_data
             #product = self.create_using_magento_data(
             #    cursor, user, product_data, context
             #)
@@ -293,7 +309,7 @@ class Product(osv.Model):
                                                                        {'product':res[0],
                                                                         'website':website.id,
                                                                         'magento_id':magento_id})
-                print '  ', mwp_id
+                #print '  ', mwp_id
                 product = self.find_using_magento_id(
                     cursor, user, magento_id, context
                     )
@@ -508,9 +524,11 @@ class Product(osv.Model):
                     cursor, user, context
                 ).id,
             'magento_product_type': product_data['type'],
-            'procure_method': product_values.get(
-                'procure_method', 'make_to_order'
-            ),
+            'procure_method':'make_to_stock',
+            'type':'product',
+            #'procure_method': product_values.get(
+            #    'procure_method', 'make_to_stock'
+            #),
             'magento_ids': [(0, 0, {
                 'magento_id': int(product_data['product_id']),
                 'website': context['magento_website'],
