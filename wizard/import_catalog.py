@@ -88,7 +88,7 @@ class ImportCatalog(osv.TransientModel):
             if len(data)>0:
                 if HEADER is None:
                     HEADER=data[0].keys()
-            fp = open(fn, 'wb')
+            fp = open('/home/jan/'+fn, 'wb')
             out=[dict2row(HEADER, x) for x in data]
             csv_writer=csv.writer(fp)
             csv_writer.writerows( [HEADER]+out )
