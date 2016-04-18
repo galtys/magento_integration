@@ -426,7 +426,14 @@ class Sale(osv.Model):
 #        file('/home/jan/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
 #        if order_data.get('delivery_date','').strip():
 #=======
-        file('/home/jan/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
+        import os
+        HOME=os.environ.get('HOME')
+        pth=os.path.join(HOME,'magento_orders')
+        fnx=os.path.join(pth, '%s.order'%sale_data['name'])
+        if not os.path.isdir(pth):
+            import subprocess
+            subprocess.call(["mkdir","+p",pth])
+        file(fnx,'wb').write( str( order_data) )
         if order_data['delivery_date'].strip():
 #>>>>>>> 4aaa7dafa93b2209f614d349a61a63ed6329dc51
             sale_data['requested_date'] = order_data['delivery_date']
