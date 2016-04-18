@@ -144,7 +144,10 @@ class ImportCatalog(osv.TransientModel):
                 out.append(rec)
                 
             #print out
-            save_csv('mg_erp_skus_cmp_pjb_live.csv', out)
+            import os
+            HOME=os.environ.get('HOME')
+            fnx=os.path.join(HOME, 'mg_erp_skus_cmp_pjb_live.csv')
+            save_csv(fnx, out)
             import xmlrpclib
             for mag_product in mag_products:
                 #pprint.pprint(mag_product)
