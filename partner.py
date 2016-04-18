@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding=UTF-8
 """
     partner
 
@@ -11,6 +11,14 @@ import magento
 
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
+def none_to_empty(a):
+    out={}
+    for k,v in a.items():
+        if v is None:
+            out[k]=''
+        else:
+            out[k]=v
+    return out
 
 
 class MagentoWebsitePartner(osv.Model):
@@ -289,10 +297,16 @@ class Partner(osv.Model):
         """
         country_obj = self.pool.get('res.country')
         state_obj = self.pool.get('res.country.state')
-
+        address_data=none_to_empty(address_data)
+        print address_data, [address_data['firstname'], address_data['lastname'], address_data['company']]
+         
         country = country_obj.search_using_magento_code(
             cursor, user, address_data['country_id'], context
         )
+        if country is None:
+            country_id=None
+        else:
+            country_id=country.id
         if address_data['region']:
             state_id = state_obj.find_or_create_using_magento_region(
                 cursor, user, country, address_data['region'], context
@@ -308,12 +322,12 @@ class Partner(osv.Model):
 #                'street2': address_data['company'],
 
                 'state_id': state_id,
-                'country_id': country.id,
+                'country_id': country_id,
                 'type':type,
                 'city': address_data['city'],
                 'zip': address_data['postcode'],
                 'phone': address_data['telephone'],
-                'mobile':address_data['mobile_number'],
+                'mobile':address_data.get('mobile_number',''),
                 'fax': address_data['fax'],
                 'parent_id': parent.id,
             }, context=context)
@@ -325,12 +339,13 @@ class Partner(osv.Model):
                 'street': address_data['street'],
 #                'street2': address_data['company'],
                 'state_id': state_id,
-                'country_id': country.id,
+                'country_id': country_id,
                 'type':type,
                 'city': address_data['city'],
                 'zip': address_data['postcode'],
                 'phone': address_data['telephone'],
-                'mobile':address_data['mobile_number'],
+                'mobile':address_data.get('mobile_number',''),
+                #'mobile':address_data['mobile_number'],
                 'fax': address_data['fax'],
             }, context=context)
 
