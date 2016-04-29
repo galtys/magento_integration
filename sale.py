@@ -739,7 +739,7 @@ class Sale(osv.Model):
             return
 
         # Order is not canceled, move it to quotation
-        #self.action_button_confirm(cursor, user, [sale.id], context)
+        self.action_button_confirm(cursor, user, [sale.id], context)
 
         if openerp_state in ['closed', 'complete', 'processing']:
             self.action_wait(cursor, user, [sale.id], context)
