@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 '''
     magento
 
@@ -109,7 +108,7 @@ class InstanceWebsite(osv.Model):
     """Magento Instance Website
 
     A magento instance can have multiple websites.
-    They act as  ‘parents’ of stores. A website consists of one or more stores.
+    They act as 'parents' of stores. A website consists of one or more stores.
     """
     _name = 'magento.instance.website'
     _description = "Magento Instance Website"
@@ -295,7 +294,7 @@ class InstanceWebsite(osv.Model):
 class WebsiteStore(osv.Model):
     """Magento Website Store or Store view groups
 
-    Stores are ‘children’ of websites. The visibility of products and
+    Stores are 'children' of websites. The visibility of products and
     categories is managed on magento at store level by specifying the
     root category on a store.
     """
@@ -436,6 +435,7 @@ class WebsiteStoreView(osv.Model):
         code=fields.char('Code', required=True, size=50, readonly=True,),
         magento_id=fields.integer('Magento ID', readonly=True,),
         last_order_import_time=fields.datetime('Last Order Import Time'),
+        up_to_delivery_date=fields.date('UP TO Delivery Date'),
         store=fields.many2one(
             'magento.website.store', 'Store', required=True, readonly=True,
         ),
@@ -590,12 +590,17 @@ class WebsiteStoreView(osv.Model):
             filter = {
                 'store_id': {'=': store_view.magento_id},
                 'state': {'in': order_states_to_import_in},
+                
 #                'status': {'in': ['completed_payment']},
             }
             if store_view.last_order_import_time:
                 filter.update({
                     'updated_at': {'gteq': store_view.last_order_import_time},
                 })
+            if store_view.up_to_delivery_date:
+                filter.update({
+                    'delivery_date': {'lteq': store_view.up_to_delivery_date},
+                    })
             self.write(cursor, user, [store_view.id], {
                 'last_order_import_time': time.strftime(
                     DEFAULT_SERVER_DATETIME_FORMAT
@@ -704,7 +709,7 @@ class WebsiteStoreView(osv.Model):
                 ('write_date', '>=', store_view.last_shipment_export_time)
             )
 
-        if store_view.export_tracking_information:
+        if store_view.export_tracking_information and 0:
             domain.extend([
                 ('carrier_tracking_ref', '!=', None),
                 ('carrier_id', '!=', None),

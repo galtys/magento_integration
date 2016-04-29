@@ -447,10 +447,13 @@
                             <group>
                                 <label for="last_order_import_time"/>
                                 <h3><field name="last_order_import_time"/></h3>
+                                <label for="up_to_delivery_date"/>
+				<h3><field name="up_to_delivery_date"/></h3>
                             </group>
                             <group>
                                 <label for="last_order_export_time"/>
                                 <h3><field name="last_order_export_time"/></h3>
+				
                             </group>
                             <group>
                                 <label for="last_shipment_export_time"/>

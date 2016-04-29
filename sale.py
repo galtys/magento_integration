@@ -437,7 +437,7 @@ class Sale(osv.Model):
         if order_data['delivery_date'].strip():
 #>>>>>>> 4aaa7dafa93b2209f614d349a61a63ed6329dc51
             sale_data['requested_date'] = order_data['delivery_date']
-        if 1:
+        if 0:
             sale_data['order_line'].append(
                 self.get_shipping_line_data_using_magento_data(
                     cursor, user, order_data, context
@@ -562,8 +562,17 @@ class Sale(osv.Model):
                 #if item['parent_item_id']:
                 #    product_uom_qty = product_uom_qty/2
                 #print item
+                t_id = self.pool.get('account.tax').search(cursor, user, [('description','=','STI20')])[0]
+                taxes =[t_id]
+                taxes = [14]
                 if item['price_incl_tax'] =='':
                     item['price_incl_tax']='0.0'
+                product=product_obj.find_or_create_using_magento_id(
+                    cursor, user, item['product_id'],
+                    context=context
+                )
+                product_id = product.id
+
                 values = {
                     'name': item['name'],
                     'price_unit': float(item['price_incl_tax']),
@@ -576,12 +585,12 @@ class Sale(osv.Model):
                     'is_bundle': is_bundle,
                     'type': 'make_to_stock',
                     'tax_id': [(6, 0, taxes)],
-                    'product_id':
-                        product_obj.find_or_create_using_magento_id(
-                            cursor, user, item['product_id'],
-                            context=context
-                        ).id
+                    'product_id':product_id,
                 }
+                if len(product.packaging)==1:
+                    values.update( {'product_packaging':product.packaging[0].id} )
+                    
+
                 line_data.append((0, 0, values))
 
             # If the product is a child product of a bundle product, do not
@@ -739,7 +748,7 @@ class Sale(osv.Model):
             return
 
         # Order is not canceled, move it to quotation
-        #self.action_button_confirm(cursor, user, [sale.id], context)
+        self.action_button_confirm(cursor, user, [sale.id], context)
 
         if openerp_state in ['closed', 'complete', 'processing']:
             self.action_wait(cursor, user, [sale.id], context)
