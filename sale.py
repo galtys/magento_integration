@@ -130,6 +130,7 @@ class Sale(osv.Model):
     _inherit = 'sale.order'
 
     _columns = dict(
+        shipping_description=fields.char("Shipping Description",size=444),
         magento_id=fields.integer('Magento ID', readonly=True),
         magento_instance=fields.many2one(
             'magento.instance', 'Magento Instance', readonly=True,
@@ -240,11 +241,9 @@ class Sale(osv.Model):
                 instance.url, instance.api_user, instance.api_key
             ) as order_api:
                 order_data = order_api.info(order_increment_id)
-
             sale = self.create_using_magento_data(
                 cursor, user, order_data, context
             )
-
         return sale
 
     def find_using_magento_id(self, cursor, user, order_id, context):
@@ -404,7 +403,7 @@ class Sale(osv.Model):
         comments += ','.join([x['comment'].lstrip('Customer Order Comment:').strip() for x in order_data['status_history'] if include_comment(x['comment']) ])
         sale_data = {
             'name': instance.order_prefix + order_data['increment_id'],
-
+            'shipping_description':order_data['shipping_description'],
             'shop_id': store_view.shop.id,
             'date_order': order_data['created_at'].split()[0],
             'partner_id': partner.id,
@@ -783,6 +782,11 @@ class Sale(osv.Model):
             except xmlrpclib.Fault, f:
                 if f.faultCode == 103:
                     return sale
+        with magento.Order(
+            instance.url, instance.api_user, instance.api_key
+        ) as order_api:
+            pass
+            #order_api.cancel(increment_id)
 
         # TODO: Add logic for other sale states also
 
