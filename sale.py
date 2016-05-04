@@ -124,13 +124,13 @@ class SaleLine(osv.osv):
         is_bundle=fields.boolean("Is Bundle"),
     )
 
-
 class Sale(osv.Model):
     "Sale"
     _inherit = 'sale.order'
 
     _columns = dict(
         shipping_description=fields.char("Shipping Description",size=444),
+        instance_carrier=fields.many2one("magento.instance.carrier","MG Instance Carrier"),
         magento_id=fields.integer('Magento ID', readonly=True),
         magento_instance=fields.many2one(
             'magento.instance', 'Magento Instance', readonly=True,
@@ -401,9 +401,17 @@ class Sale(osv.Model):
             comments=''
 
         comments += ','.join([x['comment'].lstrip('Customer Order Comment:').strip() for x in order_data['status_history'] if include_comment(x['comment']) ])
+        i_c_ids=self.pool.get("magento.instance.carrier").search(cr, uid, 
+                                                                 [('instance','=',instance.id),
+                                                                  ('title','=',order_data['shipping_description'])])
+        if len(i_c_ids)!=1:
+            raise ValueError("Carrier instance/shipping method not consistent or could not be found")
+        
         sale_data = {
             'name': instance.order_prefix + order_data['increment_id'],
             'shipping_description':order_data['shipping_description'],
+            'instance_carrier':i_c_ids[0],
+            #'shipping_method':order_data['shipping_method'],
             'shop_id': store_view.shop.id,
             'date_order': order_data['created_at'].split()[0],
             'partner_id': partner.id,
@@ -800,6 +808,8 @@ class MagentoInstanceCarrier(osv.Model):
 
     _columns = dict(
         code=fields.char("Code", readonly=True),
+        shipping_method=fields.char("shipping_method"),
+        hours=fields.char("Hours"),
         title=fields.char('Title', readonly=True),
         carrier=fields.many2one('delivery.carrier', 'Carrier'),
         instance=fields.many2one(

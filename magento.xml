@@ -125,7 +125,9 @@
                                                     <field name="code"/>
                                                 </group>
                                                 <group>
-                                                    <field name="title"/>
+                                                  <field name="title"/>
+						  <field name="hours"/>
+						  <field name="title"/>
                                                 </group>
                                                 <group>
                                                     <field name="carrier"/>
@@ -137,6 +139,8 @@
                                         </form>
                                         <tree string="Carriers">
                                             <field name="code"/>
+					    <field name="shipping_method"/>
+					    <field name="hours"/>
                                             <field name="title"/>
                                         </tree>
                                     </field>
