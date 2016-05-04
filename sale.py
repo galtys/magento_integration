@@ -401,7 +401,7 @@ class Sale(osv.Model):
             comments=''
 
         comments += ','.join([x['comment'].lstrip('Customer Order Comment:').strip() for x in order_data['status_history'] if include_comment(x['comment']) ])
-        i_c_ids=self.pool.get("magento.instance.carrier").search(cr, uid, 
+        i_c_ids=self.pool.get("magento.instance.carrier").search(cursor, user, 
                                                                  [('instance','=',instance.id),
                                                                   ('title','=',order_data['shipping_description'])])
         if len(i_c_ids)!=1:
