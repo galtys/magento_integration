@@ -401,9 +401,12 @@ class Sale(osv.Model):
             comments=''
 
         comments += ','.join([x['comment'].lstrip('Customer Order Comment:').strip() for x in order_data['status_history'] if include_comment(x['comment']) ])
+        shipping_method=order_data['shipping_method']
+        sm=shipping_method.split('_')
+        assert sm[0]==sm[1]
         i_c_ids=self.pool.get("magento.instance.carrier").search(cursor, user, 
                                                                  [('instance','=',instance.id),
-                                                                  ('title','=',order_data['shipping_description'])])
+                                                                  ('code','=',sm[0] ) ] )
         if len(i_c_ids)!=1:
             raise ValueError("Carrier instance/shipping method not consistent or could not be found")
         
