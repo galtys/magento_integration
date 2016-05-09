@@ -331,6 +331,19 @@ class Sale(osv.Model):
             )
 
         instance = store_view.instance
+        order_name = instance.order_prefix + order_data['increment_id']
+        import os
+        import pprint
+        HOME=os.environ.get('HOME')
+        pth=os.path.join(HOME,'magento_orders')
+        fnx=os.path.join(pth, '%s.order'%order_name)
+        if not os.path.isdir(pth):
+            import subprocess
+            subprocess.call(["mkdir","+p",pth])
+        #file(fnx,'wb').write( str( order_data) )
+        fp=open(fnx, 'w+')
+        pprint.pprint(order_data, stream=fp )
+        fp.close()
 
         currency = currency_obj.search_using_magento_code(
             cursor, user, order_data['order_currency_code'], context
@@ -402,18 +415,26 @@ class Sale(osv.Model):
 
         comments += ','.join([x['comment'].lstrip('Customer Order Comment:').strip() for x in order_data['status_history'] if include_comment(x['comment']) ])
         shipping_method=order_data['shipping_method']
-        sm=shipping_method.split('_')
-        assert sm[0]==sm[1]
+        import logging 
+        _logger = logging.getLogger(__name__)
+        #sm=shipping_method
+        if shipping_method:
+            sm=shipping_method.split('_')
+            _logger.info("Incoming shipping_method from MAGENTO:%s", (sm,) )
+            assert sm[0]==sm[1]
+            sm=sm[0]
+        else:
+            sm=shipping_method
+        print 'sm: ', [sm]
         i_c_ids=self.pool.get("magento.instance.carrier").search(cursor, user, 
                                                                  [('instance','=',instance.id),
-                                                                  ('code','=',sm[0] ) ] )
-        if len(i_c_ids)!=1:
+                                                                  ('code','=',sm ) ] )
+        if len(i_c_ids) not in [0,1]:
             raise ValueError("Carrier instance/shipping method not consistent or could not be found")
         
         sale_data = {
-            'name': instance.order_prefix + order_data['increment_id'],
+            'name': order_name,
             'shipping_description':order_data['shipping_description'],
-            'instance_carrier':i_c_ids[0],
             #'shipping_method':order_data['shipping_method'],
             'shop_id': store_view.shop.id,
             'date_order': order_data['created_at'].split()[0],
@@ -430,20 +451,12 @@ class Sale(osv.Model):
                 cursor, user, order_data, context),
             'delivery_notes': order_data['shipping_description'].lstrip('Select Delivery Type').lstrip('-').strip() +'\n'+ comments.strip() ,
             }
-        #if float(order_data.get('shipping_amount')):
-#<<<<<<< HEAD
-        
+        if i_c_ids:
+            sale_data.update({'instance_carrier':i_c_ids[0]} )
+            
 #        file('/home/jan/magento_orders/%s.order'% sale_data['name'],'wb').write( str( order_data) )
 #        if order_data.get('delivery_date','').strip():
 #=======
-        import os
-        HOME=os.environ.get('HOME')
-        pth=os.path.join(HOME,'magento_orders')
-        fnx=os.path.join(pth, '%s.order'%sale_data['name'])
-        if not os.path.isdir(pth):
-            import subprocess
-            subprocess.call(["mkdir","+p",pth])
-        file(fnx,'wb').write( str( order_data) )
         if order_data['delivery_date'].strip():
 #>>>>>>> 4aaa7dafa93b2209f614d349a61a63ed6329dc51
             sale_data['requested_date'] = order_data['delivery_date']
