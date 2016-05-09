@@ -291,30 +291,37 @@ class Product(osv.Model):
             )
 
             instance = website.instance
+            failed=False
             with magento.Product(
                     instance.url, instance.api_user, instance.api_key
             ) as product_api:
                 print ['magento_id for product', magento_id]
-                product_data = product_api.info(magento_id)
-                #print product_data
-            #product = self.create_using_magento_data(
-            #    cursor, user, product_data, context
-            #)
-            sku=product_data['sku']
-            cursor.execute("select id from product_product where default_code=%s",(sku,))
-            res=cursor.fetchall()
-            #print 44*'88'
-            if res:
-                mwp_id=self.pool.get('magento.website.product').create(cursor,user,
-                                                                       {'product':res[0],
-                                                                        'website':website.id,
-                                                                        'magento_id':magento_id})
-                #print '  ', mwp_id
-                product = self.find_using_magento_id(
-                    cursor, user, magento_id, context
-                    )
+                try:
+                    product_data = product_api.info(int(magento_id))
+                except:
+                    failed=True
+            if failed:
+                print "product mg info FAILED!!!!!!!!!!!!!!!!!!!!!!!!!"
+                cursor.execute("select id from product_product where default_code=%s",('not_in_mg',))
+                res=[x[0] for x in cursor.fetchall()]
+                assert len(res)<=1
+                product = self.pool.get('product.product').browse(cursor, user, res[0] )
             else:
-                print 'NOT IN ERP', sku
+                sku=product_data['sku']
+                cursor.execute("select id from product_product where default_code=%s",(sku,))
+                res=cursor.fetchall()
+                #print 44*'88'
+                if res:
+                    mwp_id=self.pool.get('magento.website.product').create(cursor,user,
+                                                                           {'product':res[0],
+                                                                            'website':website.id,
+                                                                            'magento_id':magento_id})
+                    #print '  ', mwp_id
+                    product = self.find_using_magento_id(
+                        cursor, user, magento_id, context
+                        )
+                else:
+                    print 'NOT IN ERP', sku
         if not product:
             # If product is not found, get the info from magento and delegate
             # to create_using_magento_data
