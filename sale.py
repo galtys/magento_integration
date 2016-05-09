@@ -449,7 +449,8 @@ class Sale(osv.Model):
             'magento_store_view': store_view.id,
             'order_line': self.get_item_line_data_using_magento_data(
                 cursor, user, order_data, context),
-            'delivery_notes': order_data['shipping_description'].lstrip('Select Delivery Type').lstrip('-').strip() +'\n'+ comments.strip() ,
+            #'delivery_notes': order_data['shipping_description'].lstrip('Select Delivery Type').lstrip('-').strip() +'\n'+ comments.strip() ,
+            'delivery_notes': order_data['delivery_notes']
             }
         if i_c_ids:
             sale_data.update({'instance_carrier':i_c_ids[0]} )
