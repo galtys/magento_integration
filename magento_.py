@@ -589,11 +589,12 @@ class WebsiteStoreView(osv.Model):
             # and call find_or_create_using_magento_data on sale
             filter = {
                 'store_id': {'=': store_view.magento_id},
-                #'state': {'in': order_states_to_import_in},
+                #state': {'in': order_states_to_import_in},
+                'state': {'in': ['processing']},
                 #'increment_id': {'in': ['D100003410', 'F100006194','E100012687','E100012686','E100012685','E100012684','E100012683']},
-                'increment_id': {'in': ORDERS},
+                #'increment_id': {'in': ORDERS},
                 #'increment_id': {'in': ['E100012358', 'E100012356']}
-#                'status': {'in': ['completed_payment']},
+                'status': {'in': ['processing']},
             }
             if store_view.last_order_import_time:
                 filter.update({
@@ -603,11 +604,11 @@ class WebsiteStoreView(osv.Model):
                 filter.update({
                     'delivery_date': {'lteq': store_view.up_to_delivery_date},
                 })
-           # self.write(cursor, user, [store_view.id], {
-                #'last_order_import_time': time.strftime(
-                   # DEFAULT_SERVER_DATETIME_FORMAT
-                    #)
-                #}, context=context)
+            self.write(cursor, user, [store_view.id], {
+                'last_order_import_time': time.strftime(
+                    DEFAULT_SERVER_DATETIME_FORMAT
+                )
+            }, context=context)
             orders = order_api.list(filter)
             print orders
             for order in orders:
