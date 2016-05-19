@@ -370,7 +370,7 @@ class Sale(osv.Model):
                        'email': order_data['customer_email'],
                        #'mobile': order_data['mobile_number'],                   
                        'property_product_pricelist': store_view.shop.pricelist_id.id,
-                       'magento_id': 0
+                       'magento_id': order_data['customer_id'],
                        }
             address.write( main_vals)
             partner=address
@@ -394,10 +394,10 @@ class Sale(osv.Model):
         #same_shipping_and_billing=order_data['shipping_address']['same_as_billing']
         same_shipping_and_billing=True#order_data['shipping_address']['same_as_billing']
 
-        if int( same_shipping_and_billing) and cmp_add(order_data):
-            partner_shipping_address=partner
-        else:
-            partner_shipping_address=self.pool.get('res.partner').create_address_as_partner_using_magento_data(
+        #if int( same_shipping_and_billing) and cmp_add(order_data):
+        #    partner_shipping_address=partner
+        #else:
+        partner_shipping_address=self.pool.get('res.partner').create_address_as_partner_using_magento_data(
                 cursor, user, order_data['shipping_address'], partner, context,type='delivery',
                 )
         def include_comment(c):
@@ -485,7 +485,7 @@ class Sale(osv.Model):
         self.process_sale_using_magento_state(
             cursor, user, sale, order_data['state'], context
         )
-        self.invoice_and_pay(cursor, user, [sale_id], context)
+        #self.invoice_and_pay(cursor, user, [sale_id], context)
         return sale
     def _create_pickings_and_procurements(self, cr, uid, order, order_lines, picking_id=False, context=None):
         """Create the required procurements to supply sales order lines, also connecting
@@ -614,7 +614,7 @@ class Sale(osv.Model):
                 if len(product.packaging)==1:
                     values.update( {'product_packaging':product.packaging[0].id} )
                     
-
+                #if item['product_type'] in ['simple']:
                 line_data.append((0, 0, values))
 
             # If the product is a child product of a bundle product, do not

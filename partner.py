@@ -319,7 +319,7 @@ class Partner(osv.Model):
                     [address_data['firstname'], address_data['lastname'], address_data['company']]
                 ),
                 'street': address_data['street'],
-#                'street2': address_data['company'],
+ #               'street2': address_data['company'],
 
                 'state_id': state_id,
                 'country_id': country_id,
@@ -337,7 +337,7 @@ class Partner(osv.Model):
                     [address_data['firstname'], address_data['lastname'], address_data['company']]
                 ),
                 'street': address_data['street'],
-#                'street2': address_data['company'],
+  #              'street2': address_data['company'],
                 'state_id': state_id,
                 'country_id': country_id,
                 'type':type,
