@@ -335,8 +335,10 @@ class Sale(osv.Model):
         import os
         import pprint
         HOME=os.environ.get('HOME')
-        pth=os.path.join(HOME,'magento_orders')
-        fnx=os.path.join(pth, '%s.order'%order_name)
+        pth=os.path.join(HOME,'magento_orders', cursor.dbname)
+        if not os.path.isdir(pth):
+            os.makedirs(pth)
+        fnx=os.path.join(pth, '%s.json'%order_name)
         if not os.path.isdir(pth):
             import subprocess
             subprocess.call(["mkdir","+p",pth])
@@ -397,6 +399,16 @@ class Sale(osv.Model):
         #if int( same_shipping_and_billing) and cmp_add(order_data):
         #    partner_shipping_address=partner
         #else:
+        ship_email = order_data['shipping_address']['email']
+        cust_email = order_data['customer_email']
+        bill_email = order_data['billing_address']['email']
+        if not ship_email:
+            order_data['shipping_address']['email'] = cust_email
+        ship_email = order_data['shipping_address']['email']
+        if not ship_email:
+            order_data['shipping_address']['email'] = bill_email
+
+
         partner_shipping_address=self.pool.get('res.partner').create_address_as_partner_using_magento_data(
                 cursor, user, order_data['shipping_address'], partner, context,type='delivery',
                 )
