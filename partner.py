@@ -20,6 +20,13 @@ def none_to_empty(a):
             out[k]=v
     return out
 
+class slug_lookup(osv.Model):
+    _name = 'slug.lookup'
+    _name_rec = 'csv_key'
+    _columns = {
+        'csv_key': fields.char('csv_key', size=444),
+        'slug':fields.char("slug", size=444),
+    }
 
 class MagentoWebsitePartner(osv.Model):
     "Magento Website partner store"
@@ -329,6 +336,7 @@ class Partner(osv.Model):
                 'phone': address_data['telephone'],
                 'mobile':address_data.get('mobile_number',''),
                 'fax': address_data['fax'],
+                'email': address_data['email'],
                 'parent_id': parent.id,
             }, context=context)
         else:
@@ -347,6 +355,7 @@ class Partner(osv.Model):
                 'mobile':address_data.get('mobile_number',''),
                 #'mobile':address_data['mobile_number'],
                 'fax': address_data['fax'],
+                'email': address_data['email'],
             }, context=context)
 
         return self.browse(cursor, user, address_id, context=context)
