@@ -7,6 +7,31 @@
         <menuitem id="menu_magento_config" name="Configuration" sequence="50"
             parent="menu_magento" groups="base.group_user"/>
 
+
+	<!--slug-->
+        <record id="slug_lookup_tree_view" model="ir.ui.view">
+            <field name="name">slug.lookup.tree</field>
+            <field name="model">slug.lookup</field>
+            <field eval="7" name="priority"/>
+            <field name="arch" type="xml">
+                <tree string="slug">
+                    <field name="csv_key"/>
+                    <field name="slug"/>
+                </tree>
+            </field>
+        </record>
+	
+	
+        <record id="slug_lookup_action" model="ir.actions.act_window">
+            <field name="name">slug lookups</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">slug.lookup</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <menuitem action="slug_lookup_action" id="menu_slug_lookup"
+            parent="menu_magento_config" sequence="5" groups="base.group_user"/>
+
         <!--Instance-->
         <record id="magento_instance_tree_view" model="ir.ui.view">
             <field name="name">magento.instance.tree</field>
