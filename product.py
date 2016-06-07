@@ -471,6 +471,7 @@ class Product(osv.Model):
             'name': product_data['name'],
             'default_code': product_data['sku'],
             'description': product_data['description'],
+            'magento_product_type': product_date['type'],
 #            'list_price': float(
 #                product_data.get('special_price') or
 #                product_data.get('price') or 0.00
@@ -490,7 +491,7 @@ class Product(osv.Model):
         :returns: Browse record of product updated
         """
         product_values = self.extract_product_values_from_data(product_data)
-        self.write(cursor, user, product.id, product_values, context=context)
+        self.write(cursor, user, [product.id], product_values, context=context)
 
         # Rebrowse the record
         product = self.browse(cursor, user, product.id, context=context)
