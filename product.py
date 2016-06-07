@@ -8,6 +8,8 @@ import magento
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
 import openerp.addons.decimal_precision as dp
+import logging
+_logger = logging.getLogger(__name__)
 
 #delete from magento_store_store_view;
 #delete from magento_store_price_tier ;
@@ -269,7 +271,7 @@ class Product(osv.Model):
         :returns: Browse record of product found/created
         """
         website_obj = self.pool.get('magento.instance.website')
-
+        _logger.debug("find_or_create_using_magento_id, product=self.find_using_magento_id")
         product = self.find_using_magento_id(
             cursor, user, magento_id, context
         )
@@ -286,6 +288,7 @@ class Product(osv.Model):
         #    print product_data
 
         if not product:
+            _logger.debug("product not found using magento_id")
             website = website_obj.browse(
                 cursor, user, context['magento_website'], context=context
             )
@@ -294,7 +297,8 @@ class Product(osv.Model):
             with magento.Product(
                     instance.url, instance.api_user, instance.api_key
             ) as product_api:
-                print ['magento_id for product', magento_id]
+                #print ['magento_id for product', magento_id]
+                _logger.debug("product_data = product_api.info(magento_id)")
                 product_data = product_api.info(magento_id)
                 #print product_data
             #product = self.create_using_magento_data(
@@ -303,6 +307,7 @@ class Product(osv.Model):
             sku=product_data['sku']
             cursor.execute("select id from product_product where default_code=%s",(sku,))
             res=cursor.fetchall()
+            _logger.debug("does SKU:[%s] exist in product_product table?, ret:%s",sku,res)
             #print 44*'88'
             if res:
                 mwp_id=self.pool.get('magento.website.product').create(cursor,user,
@@ -313,8 +318,10 @@ class Product(osv.Model):
                 product = self.find_using_magento_id(
                     cursor, user, magento_id, context
                     )
+                _logger.debug("SKU found in product_product")
             else:
-                print 'NOT IN ERP', sku
+                _logger.debug("SKU: [%s] not found in ERP", sku)
+                #print 'NOT IN ERP', sku
         if not product:
             # If product is not found, get the info from magento and delegate
             # to create_using_magento_data
@@ -331,6 +338,7 @@ class Product(osv.Model):
             product = self.create_using_magento_data(
                 cursor, user, product_data, context
             )
+            _logger.debug("created product using magento data")
 
         return product
 

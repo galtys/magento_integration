@@ -9,6 +9,8 @@
 """
 from openerp.osv import osv
 from openerp.tools.translate import _
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class ImportOrders(osv.TransientModel):
@@ -29,10 +31,16 @@ class ImportOrders(osv.TransientModel):
         store_view = store_view_obj.browse(
             cursor, user, context.get('active_id')
         )
-
+        _logger.debug("START sales=store_view_obj.import_orders_from_store_view("
+                      "cursor, user, store_view, context)"
+                  )
         sales = store_view_obj.import_orders_from_store_view(
             cursor, user, store_view, context
         )
+        _logger.debug("SUCCESS sales=store_view_obj.import_orders_from_store_view("
+                      "cursor, user, store_view, context)"
+                      "START self.open_sales(cursor, user, map(int, sales), context)"
+                  )
 
         return self.open_sales(cursor, user, map(int, sales), context)
 

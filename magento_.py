@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 '''
     magento
 
@@ -546,7 +546,7 @@ class WebsiteStoreView(osv.Model):
         :return: list of sale ids
         """
         sale_obj = self.pool.get('sale.order')
-        print '44.'*87
+
         magento_state_obj = self.pool.get('magento.order_state')
 
         instance = store_view.instance
@@ -580,7 +580,7 @@ class WebsiteStoreView(osv.Model):
                     'Please configure the order states on magento instance'
                 )
             )
-
+        _logger.debug("About to import orders")
         with magento.Order(
             instance.url, instance.api_user, instance.api_key
         ) as order_api:
@@ -590,7 +590,7 @@ class WebsiteStoreView(osv.Model):
             filter = {
                 'store_id': {'=': store_view.magento_id},
                 'state': {'in': order_states_to_import_in},
-#                'status': {'in': ['completed_payment']},
+                #'status': {'in': ['completed_payment']},
             }
             if store_view.last_order_import_time:
                 filter.update({
@@ -602,8 +602,9 @@ class WebsiteStoreView(osv.Model):
                 )
             }, context=context)
             orders = order_api.list(filter)
-            print orders
+            #print orders
             for order in orders:
+                _logger.debug("Creating new ERP sale order for data: %s", order)
                 new_sales.append(
                     sale_obj.find_or_create_using_magento_data(
                         cursor, user,

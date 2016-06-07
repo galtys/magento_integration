@@ -13,6 +13,9 @@ import magento
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
 from openerp import netsvc
+import logging
+_logger = logging.getLogger(__name__)
+
 def none_to_empty(a):
     out={}
     for k,v in a.items():
@@ -458,10 +461,12 @@ class Sale(osv.Model):
         sale = self.browse(cursor, user, sale_id, context)
 
         # Process sale now
+        _logger.debug("self.process_sale_using_magento_state")
         self.process_sale_using_magento_state(
             cursor, user, sale, order_data['state'], context
         )
-        self.invoice_and_pay(cursor, user, [sale_id], context)
+        _logger.debug("self.invoice_and_pay? .. not now")
+        #self.invoice_and_pay(cursor, user, [sale_id], context)
         return sale
     def _create_pickings_and_procurements(self, cr, uid, order, order_lines, picking_id=False, context=None):
         """Create the required procurements to supply sales order lines, also connecting
@@ -488,7 +493,7 @@ class Sale(osv.Model):
         proc_ids = []
 
         for line in order_lines:
-            print "creating procurement for line", [line.product_id.default_code, line.is_bundle, picking_id, line.product_id.type]
+            _logger.debug("creating procurement for line: %s", [line.product_id.default_code, line.is_bundle, picking_id, line.product_id.type])
             if line.state == 'done':
                 continue
 
@@ -500,7 +505,7 @@ class Sale(osv.Model):
                         picking_id = picking_obj.create(cr, uid, self._prepare_order_picking(cr, uid, order, context=context))
                     if not line.is_bundle:
                         move_id = move_obj.create(cr, uid, self._prepare_order_line_move(cr, uid, order, line, picking_id, date_planned, context=context))
-                        print 'new move id',move_id
+                        #print 'new move id',move_id
                 else:
                     # a service has no stock move
                     move_id = False
@@ -549,19 +554,12 @@ class Sale(osv.Model):
         for item_ in order_data['items']:
             if 1:#not item['parent_item_id']:
                 item = none_to_empty(item_)
-                #print 44*'_', [item['price_incl_tax'] ]
-                #print [item['price_incl_tax'], float(item['price_incl_tax'])]
                 taxes = self.get_magento_taxes(cursor, user, item, context)
 
-                # If its a top level product, create it
-                #print item
                 is_bundle=False
                 if (not item['parent_item_id']) and ('bundle_option' in item['product_options']):
                     is_bundle=True
                 product_uom_qty = float(item['qty_ordered'])
-                #if item['parent_item_id']:
-                #    product_uom_qty = product_uom_qty/2
-                #print item
                 if item['price_incl_tax'] =='':
                     item['price_incl_tax']='0.0'
                 values = {
@@ -713,6 +711,8 @@ class Sale(osv.Model):
         :param context: Application context
         """
         # TODO: Improve this method for invoicing and shipping etc
+        if context is None:
+            context={}
         magento_order_state_obj = self.pool.get('magento.order_state')
 
         state_ids = magento_order_state_obj.search(cursor, user, [
@@ -739,6 +739,8 @@ class Sale(osv.Model):
             return
 
         # Order is not canceled, move it to quotation
+        #_logger.debug("self.action_button_confirm ?")
+        context.update({'not_from_magento':False})
         self.action_button_confirm(cursor, user, [sale.id], context)
 
         if openerp_state in ['closed', 'complete', 'processing']:

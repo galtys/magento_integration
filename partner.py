@@ -11,6 +11,9 @@ import magento
 
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
+import logging
+_logger = logging.getLogger(__name__)
+
 def none_to_empty(a):
     out={}
     for k,v in a.items():
@@ -298,7 +301,8 @@ class Partner(osv.Model):
         country_obj = self.pool.get('res.country')
         state_obj = self.pool.get('res.country.state')
         address_data=none_to_empty(address_data)
-        print address_data, [address_data['firstname'], address_data['lastname'], address_data['company']]
+        _logger.debug("create_address_as_partner_using_magento_data: %s", address_data)
+        #print address_data, [address_data['firstname'], address_data['lastname'], address_data['company']]
          
         country = country_obj.search_using_magento_code(
             cursor, user, address_data['country_id'], context
