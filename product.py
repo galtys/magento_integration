@@ -471,7 +471,7 @@ class Product(osv.Model):
             'name': product_data['name'],
             'default_code': product_data['sku'],
             'description': product_data['description'],
-            'magento_product_type': product_date['type'],
+            'magento_product_type': product_data['type'],
 #            'list_price': float(
 #                product_data.get('special_price') or
 #                product_data.get('price') or 0.00
