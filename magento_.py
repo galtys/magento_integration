@@ -592,9 +592,9 @@ class WebsiteStoreView(osv.Model):
             filter = {
                 'store_id': {'=': store_view.magento_id},
                 #state': {'in': order_states_to_import_in},
-                'state': {'in': ['processing','new']},
+                'state': {'in': ['processing','new', 'payment_success']},
                 #'increment_id': {'in': ORDERS},
-                'status': {'in': ['processing','new']},
+                'status': {'in': ['processing','new',  'payment_success']},
             }
             if store_view.last_order_import_time:
                 filter.update({

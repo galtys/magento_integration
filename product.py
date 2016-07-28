@@ -444,11 +444,13 @@ class Product(osv.Model):
         with magento.Product(
             instance.url, instance.api_user, instance.api_key
         ) as product_api:
+            cursor.execute("select magento_id from magento_website_product where product=%s and website=%s", (product.id, website.id) )
+            print [x for x in cursor.fetchall()], product, website
             magento_product_id, = magento_product_obj.search(
                 cursor, user, [
                     ('product', '=', product.id),
                     ('website', '=', website.id),
-                ], context=context
+                ]
             )
             magento_product = magento_product_obj.browse(
                 cursor, user, magento_product_id, context=context
@@ -470,6 +472,7 @@ class Product(osv.Model):
             'name': product_data['name'],
             'default_code': product_data['sku'],
             'description': product_data['description'],
+            'magento_product_type': product_data['type'],
 #            'list_price': float(
 #                product_data.get('special_price') or
 #                product_data.get('price') or 0.00
